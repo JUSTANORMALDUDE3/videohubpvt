@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,23 +9,35 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script>
+    (function () {
+      var savedTheme = localStorage.getItem('videohub_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
 </head>
+
 <body class="page-{{ request.endpoint or 'default' }}">
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
   {% with messages = get_flashed_messages(with_categories=true) %}
-    {% for category, message in messages %}
-    <div data-flash="{{ message }}" data-flash-type="{{ category }}" style="display:none;"></div>
-    {% endfor %}
+  {% for category, message in messages %}
+  <div data-flash="{{ message }}" data-flash-type="{{ category }}" style="display:none;"></div>
+  {% endfor %}
   {% endwith %}
 
   {% if session.username %}
   <header class="main-header">
     <a href="{{ url_for('home') }}" class="logo">VideoHub</a>
     <form class="search-form" action="{{ url_for('home') }}" method="get" role="search">
-      {% if request.args.get('rank') %}<input type="hidden" name="rank" value="{{ request.args.get('rank') }}">{% endif %}
-      <input type="search" name="q" class="search-input" placeholder="Search videos..." value="{{ request.args.get('q', '') }}" autocomplete="off">
+      {% if request.args.get('rank') %}<input type="hidden" name="rank" value="{{ request.args.get('rank') }}">{% endif
+      %}
+      <input type="search" name="q" class="search-input" placeholder="Search videos..."
+        value="{{ request.args.get('q', '') }}" autocomplete="off">
       <button type="submit" class="search-btn" aria-label="Search">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
       </button>
     </form>
     <nav class="header-nav">
@@ -43,7 +56,50 @@
     {% block content %}{% endblock %}
   </main>
 
+  <!-- Global Theme Switcher Settings -->
+  <button id="themeSettingsBtn" class="theme-fab" aria-label="Theme Settings">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path
+        d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  </button>
+
+  <div id="themeModalOverlay" class="theme-modal-overlay"></div>
+  <div id="themeModal" class="theme-modal glass">
+    <div class="theme-modal-header">
+      <h3 class="theme-modal-title">Appearance</h3>
+      <button id="closeThemeModal" class="theme-modal-close" aria-label="Close Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <div class="theme-modal-body">
+      <p class="theme-modal-desc">Select your preferred theme.</p>
+      <div class="theme-grid">
+        <button class="theme-swatch" data-set-theme="dark" aria-label="Dark Theme">
+          <div class="color-preview" style="background: #08080a; border-color: rgba(255,255,255,0.1)"></div>
+          <span>Dark</span>
+        </button>
+        <button class="theme-swatch" data-set-theme="light" aria-label="Light Theme">
+          <div class="color-preview" style="background: #f8f9fa; border-color: rgba(0,0,0,0.1)"></div>
+          <span>Light</span>
+        </button>
+        <button class="theme-swatch" data-set-theme="cream" aria-label="Cream Theme">
+          <div class="color-preview" style="background: #fdfbf7; border-color: rgba(139,115,85,0.2)"></div>
+          <span>Cream</span>
+        </button>
+        <button class="theme-swatch" data-set-theme="neon" aria-label="Neon Theme">
+          <div class="color-preview" style="background: #050505; border-color: #39ff14"></div>
+          <span>Neon</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>
+
 </html>

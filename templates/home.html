@@ -2,29 +2,29 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<div class="layout-with-sidebar">
-  <aside class="sidebar">
-    <h2 class="sidebar-title">Categories</h2>
-    <nav class="sidebar-nav">
-      <a href="{{ url_for('home') }}" class="sidebar-link {{ 'active' if not request.args.get('rank') else '' }}">
-        <span class="rank-dot rank-all"></span> All
-      </a>
-      <a href="{{ url_for('home', rank='top') }}" class="sidebar-link {{ 'active' if request.args.get('rank') == 'top' else '' }}">
-        <span class="rank-dot rank-top"></span> Top
-      </a>
-      <a href="{{ url_for('home', rank='middle') }}" class="sidebar-link {{ 'active' if request.args.get('rank') == 'middle' else '' }}">
-        <span class="rank-dot rank-middle"></span> Middle
-      </a>
-      <a href="{{ url_for('home', rank='free') }}" class="sidebar-link {{ 'active' if request.args.get('rank') == 'free' else '' }}">
-        <span class="rank-dot rank-free"></span> Free
-      </a>
-    </nav>
-  </aside>
+<div class="main-layout">
+  
+  <div class="category-chips">
+    <a href="{{ url_for('home') }}" class="category-chip {{ 'active' if not request.args.get('rank') else '' }}">
+      <span class="rank-dot rank-all"></span> All Videos
+    </a>
+    <a href="{{ url_for('home', rank='top') }}" class="category-chip {{ 'active' if request.args.get('rank') == 'top' else '' }}">
+      <span class="rank-dot rank-top"></span> Top API
+    </a>
+    <a href="{{ url_for('home', rank='middle') }}" class="category-chip {{ 'active' if request.args.get('rank') == 'middle' else '' }}">
+      <span class="rank-dot rank-middle"></span> Middle Tier
+    </a>
+    <a href="{{ url_for('home', rank='free') }}" class="category-chip {{ 'active' if request.args.get('rank') == 'free' else '' }}">
+      <span class="rank-dot rank-free"></span> Free
+    </a>
+  </div>
 
   <section class="content-area">
-    <h1 class="page-heading">Videos</h1>
     {% if request.args.get('q') %}
-    <p class="search-info">Results for "{{ request.args.get('q') }}"</p>
+    <h1 class="page-heading">Search Results</h1>
+    <p class="search-info">Showing results for "{{ request.args.get('q') }}"</p>
+    {% else %}
+    <h1 class="page-heading">Explore</h1>
     {% endif %}
 
     {% if not videos %}
@@ -49,7 +49,7 @@
         </div>
         <div class="video-card-info">
           <h3 class="video-card-title">{{ v.title }}</h3>
-          <p class="video-card-meta">{{ v.rank }} tier</p>
+          <p class="video-card-meta">{{ v.rank | title }} tier</p>
         </div>
       </a>
       {% endfor %}

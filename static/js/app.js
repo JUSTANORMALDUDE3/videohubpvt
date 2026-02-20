@@ -214,9 +214,72 @@
     updatePlayIcon();
   }
 
+  function initThemeSwitcher() {
+    var themeBtn = document.getElementById('themeSettingsBtn');
+    var themeModal = document.getElementById('themeModal');
+    var themeOverlay = document.getElementById('themeModalOverlay');
+    var closeBtn = document.getElementById('closeThemeModal');
+    var swatches = document.querySelectorAll('.theme-swatch');
+
+    if (!themeBtn || !themeModal) return;
+
+    var currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    
+    // Highlight active swatch on load
+    swatches.forEach(function(btn) {
+      if (btn.getAttribute('data-set-theme') === currentTheme) {
+        btn.classList.add('active');
+      }
+    });
+
+    function openModal() {
+      themeModal.classList.add('active');
+      themeOverlay.classList.add('active');
+    }
+
+    function closeModal() {
+      themeModal.classList.remove('active');
+      themeOverlay.classList.remove('active');
+    }
+
+    function setTheme(themeName) {
+      // Temporarily add transition class to body
+      document.body.classList.add('theme-transition');
+      
+      document.documentElement.setAttribute('data-theme', themeName);
+      localStorage.setItem('videohub_theme', themeName);
+
+      swatches.forEach(function(btn) {
+        if (btn.getAttribute('data-set-theme') === themeName) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      // Remove transition class after animation completes (matches CSS 0.4s)
+      setTimeout(function() {
+        document.body.classList.remove('theme-transition');
+      }, 400);
+      
+      closeModal();
+    }
+
+    themeBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+    themeOverlay.addEventListener('click', closeModal);
+
+    swatches.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        setTheme(this.getAttribute('data-set-theme'));
+      });
+    });
+  }
+
   // Optional: page transition fade
   document.addEventListener('DOMContentLoaded', function () {
     readFlash();
+    initThemeSwitcher();
     document.body.classList.add('loaded');
     if (document.body.classList.contains('page-watch')) {
       initWatchPlayer();

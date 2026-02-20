@@ -53,8 +53,10 @@
     const progressPercent = document.getElementById('progress-percent');
     const progressStatus = document.getElementById('progress-status');
     const uploadBtn = document.getElementById('upload-btn');
-    // Maximum chunk size (20 MB)
-    const CHUNK_SIZE = 20 * 1024 * 1024;
+    // Dynamically set chunk size: 5MB for mobile, 20MB for PC
+    const isMobileUser = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    const CHUNK_SIZE = isMobileUser ? (5 * 1024 * 1024) : (20 * 1024 * 1024);
+    const MAX_RETRIES = 3;
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -77,11 +79,11 @@
       uploadBtn.disabled = true;
       uploadBtn.textContent = 'Preparing...';
 
-      // Start recursive upload
-      uploadChunk(file, 0, uploadId, title, description, rank);
+      // Start recursive upload (with 0 initial retries)
+      uploadChunk(file, 0, uploadId, title, description, rank, 0);
     });
 
-    function uploadChunk(file, start, uploadId, title, description, rank) {
+    function uploadChunk(file, start, uploadId, title, description, rank, retryCount) {
       const end = Math.min(start + CHUNK_SIZE, file.size);
       const chunk = file.slice(start, end);
       const isLastChunk = end >= file.size;
@@ -106,13 +108,10 @@
       const xhr = new XMLHttpRequest();
       xhr.open('POST', form.action);
 
-      // We do NOT add upload progress tracking on the chunk request itself here, 
-      // but instead update the progress based on completed chunks.
       xhr.upload.addEventListener('progress', function (e) {
         if (e.lengthComputable) {
           const currentUploaded = start + e.loaded;
           const percent = Math.min(Math.round((currentUploaded / file.size) * 100), 100);
-          // Avoid dropping to 0% mid-chunk or jumping over 100 before final piece
           progressBar.style.width = percent + '%';
           progressPercent.textContent = percent + '%';
           progressStatus.textContent = 'Uploading... ' + formatBytes(currentUploaded) + ' / ' + formatBytes(file.size);
@@ -137,13 +136,22 @@
               finishUploadSuccess();
             } else {
               // Upload next chunk
-              uploadChunk(file, end, uploadId, title, description, rank);
+              uploadChunk(file, end, uploadId, title, description, rank, 0);
             }
           } else {
             showError(response ? response.error : 'Upload failed');
             resetForm();
           }
         } else {
+          // Retry on server errors (5xx)
+          if (xhr.status >= 500 && xhr.status < 600 && retryCount < MAX_RETRIES) {
+            progressStatus.textContent = 'Server error, retrying... ' + (retryCount + 1) + '/' + MAX_RETRIES;
+            setTimeout(function () {
+              uploadChunk(file, start, uploadId, title, description, rank, retryCount + 1);
+            }, 2000 * (retryCount + 1));
+            return;
+          }
+
           let errorMsg = 'Upload failed.';
           try {
             const r = JSON.parse(xhr.responseText);
@@ -155,8 +163,16 @@
       });
 
       xhr.addEventListener('error', function () {
-        showError('Network error. Please check your connection.');
-        resetForm();
+        // Retry on network disconnects
+        if (retryCount < MAX_RETRIES) {
+          progressStatus.textContent = 'Connection dropped, retrying... ' + (retryCount + 1) + '/' + MAX_RETRIES;
+          setTimeout(function () {
+            uploadChunk(file, start, uploadId, title, description, rank, retryCount + 1);
+          }, 2000 * (retryCount + 1));
+        } else {
+          showError('Network error. Please check your connection.');
+          resetForm();
+        }
       });
 
       xhr.send(formData);
