@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Manage Users{% endblock %}
+
+{% block content %}
+<div class="admin-form-page">
+  <h1 class="page-heading">Manage Users</h1>
+
+  <div class="form-card glass">
+    <h2 class="section-title">Add User</h2>
+    <form method="post" action="{{ url_for('admin_users') }}" class="inline-form">
+      <input type="hidden" name="action" value="add">
+      <input type="text" name="username" class="input-field" placeholder="Username" required>
+      <input type="password" name="password" class="input-field" placeholder="Password" required>
+      <select name="rank" class="input-field">
+        <option value="free">Free</option>
+        <option value="middle">Middle</option>
+        <option value="top">Top</option>
+      </select>
+      <button type="submit" class="btn btn-primary">Add User</button>
+    </form>
+  </div>
+
+  <div class="users-list glass">
+    <h2 class="section-title">Users</h2>
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Rank</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>{{ u.username }}</td>
+          <td><span class="rank-badge rank-{{ u.rank }}">{{ u.rank }}</span></td>
+          <td class="user-actions">
+            <a href="{{ url_for('admin_edit_user', username=u.username) }}" class="btn btn-primary btn-sm">Edit</a>
+            {% if u.username != 'admin' %}
+            <form method="post" action="{{ url_for('admin_users') }}" class="delete-form inline" onsubmit="return confirm('Delete {{ u.username }}?');">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="username" value="{{ u.username }}">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">← Back to Admin</a>
+</div>
+{% endblock %}

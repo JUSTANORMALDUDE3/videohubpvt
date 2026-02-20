@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ video.title }}{% endblock %}
+
+{% block content %}
+<div class="admin-form-page">
+  <h1 class="page-heading">Edit Video</h1>
+  <div class="form-card glass">
+    <form method="post" action="{{ url_for('admin_edit_video', video_id=video.id) }}" class="upload-form">
+      <label class="input-label" for="title">Title</label>
+      <input type="text" id="title" name="title" class="input-field" value="{{ video.title }}" required>
+
+      <label class="input-label" for="description">Description</label>
+      <textarea id="description" name="description" class="input-field textarea" rows="4">{{ video.description }}</textarea>
+
+      <label class="input-label" for="rank">Rank</label>
+      <select id="rank" name="rank" class="input-field">
+        <option value="free" {{ 'selected' if video.rank == 'free' else '' }}>Free</option>
+        <option value="middle" {{ 'selected' if video.rank == 'middle' else '' }}>Middle</option>
+        <option value="top" {{ 'selected' if video.rank == 'top' else '' }}>Top</option>
+      </select>
+
+      <p class="muted" style="font-size: 0.85rem;">File: {{ video.filename }} (cannot be changed here)</p>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save changes</button>
+        <a href="{{ url_for('admin_videos') }}" class="btn btn-secondary">Cancel</a>
+        <form method="post" action="{{ url_for('admin_delete_video', video_id=video.id) }}" class="delete-form inline" onsubmit="return confirm('Delete this video? The file will be removed.');">
+          <button type="submit" class="btn btn-danger">Delete video</button>
+        </form>
+      </div>
+    </form>
+  </div>
+  <a href="{{ url_for('admin_videos') }}" class="btn btn-secondary" style="margin-top: 8px;">← Back to Edit Videos</a>
+</div>
+{% endblock %}

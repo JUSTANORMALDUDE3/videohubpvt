@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | VideoHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="page-login">
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div data-flash="{{ message }}" data-flash-type="{{ category }}" style="display:none;"></div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="login-wrap">
+    <div class="login-card glass">
+      <h1 class="login-title">VideoHub</h1>
+      <p class="login-subtitle">Sign in to watch</p>
+
+      <form method="post" action="{{ url_for('login') }}" class="login-form">
+        <input type="hidden" name="csrf_token" value="">
+        <label class="input-label" for="username">Username</label>
+        <input type="text" id="username" name="username" class="input-field" placeholder="Username" required autocomplete="username" autofocus>
+
+        <label class="input-label" for="password">Password</label>
+        <input type="password" id="password" name="password" class="input-field" placeholder="Password" required autocomplete="current-password">
+
+        <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script>
+    document.querySelector('.login-form').addEventListener('submit', function() {
+      this.querySelector('.btn').disabled = true;
+      this.querySelector('.btn').textContent = 'Signing in...';
+    });
+  </script>
+</body>
+</html>

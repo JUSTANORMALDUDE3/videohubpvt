@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Upload Video{% endblock %}
+
+{% block content %}
+<div class="admin-form-page">
+  <h1 class="page-heading">Upload Video</h1>
+  <div class="form-card glass">
+    <!-- Upload Progress -->
+    <div id="upload-progress" class="upload-progress" style="display: none;">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+      <div class="progress-text">
+        <span id="progress-percent">0%</span>
+        <span id="progress-status">Uploading...</span>
+      </div>
+    </div>
+
+    <form method="post" action="{{ url_for('admin_upload') }}" enctype="multipart/form-data" class="upload-form" id="upload-form">
+      <label class="input-label" for="title">Title</label>
+      <input type="text" id="title" name="title" class="input-field" placeholder="Video title" required>
+
+      <label class="input-label" for="description">Description</label>
+      <textarea id="description" name="description" class="input-field textarea" rows="4" placeholder="Optional description"></textarea>
+
+      <label class="input-label" for="rank">Rank</label>
+      <select id="rank" name="rank" class="input-field">
+        <option value="free">Free</option>
+        <option value="middle">Middle</option>
+        <option value="top">Top</option>
+      </select>
+
+      <label class="input-label" for="video">Video file</label>
+      <input type="file" id="video" name="video" class="input-field file-input" accept=".mp4,.webm,.mkv,.mov" required>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="upload-btn">Upload</button>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  const form = document.getElementById('upload-form');
+  const progressWrap = document.getElementById('upload-progress');
+  const progressBar = document.getElementById('progress-bar');
+  const progressPercent = document.getElementById('progress-percent');
+  const progressStatus = document.getElementById('progress-status');
+  const uploadBtn = document.getElementById('upload-btn');
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(form);
+    const xhr = new XMLHttpRequest();
+
+    // Show progress
+    progressWrap.style.display = 'block';
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = 'Uploading...';
+
+    // Track upload progress
+    xhr.upload.addEventListener('progress', function(e) {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        progressBar.style.width = percent + '%';
+        progressPercent.textContent = percent + '%';
+        progressStatus.textContent = 'Uploading... ' + formatBytes(e.loaded) + ' / ' + formatBytes(e.total);
+      }
+    });
+
+    // Handle completion
+    xhr.addEventListener('load', function() {
+      if (xhr.status === 200) {
+        try {
+          const response = JSON.parse(xhr.responseText);
+          if (response.success) {
+            progressBar.style.width = '100%';
+            progressPercent.textContent = '100%';
+            progressStatus.textContent = 'Upload complete! Redirecting...';
+            setTimeout(function() {
+              window.location.href = "{{ url_for('admin_dashboard') }}";
+            }, 1000);
+          } else {
+            showError(response.error || 'Upload failed');
+            resetForm();
+          }
+        } catch (e) {
+          // If response is HTML (redirect), reload page
+          window.location.reload();
+        }
+      } else {
+        try {
+          const response = JSON.parse(xhr.responseText);
+          showError(response.error || 'Upload failed');
+        } catch (e) {
+          showError('Upload failed. Please try again.');
+        }
+        resetForm();
+      }
+    });
+
+    // Handle errors
+    xhr.addEventListener('error', function() {
+      showError('Network error. Please check your connection.');
+      resetForm();
+    });
+
+    xhr.addEventListener('abort', function() {
+      showError('Upload cancelled.');
+      resetForm();
+    });
+
+    // Send request
+    xhr.open('POST', form.action);
+    xhr.send(formData);
+  });
+
+  function resetForm() {
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = 'Upload';
+    setTimeout(function() {
+      progressWrap.style.display = 'none';
+      progressBar.style.width = '0%';
+      progressPercent.textContent = '0%';
+      progressStatus.textContent = 'Uploading...';
+    }, 3000);
+  }
+
+  function showError(msg) {
+    if (window.VideoHub && window.VideoHub.toast) {
+      window.VideoHub.toast(msg, 'error');
+    } else {
+      alert(msg);
+    }
+  }
+
+  function formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  }
+})();
+</script>
+{% endblock %}

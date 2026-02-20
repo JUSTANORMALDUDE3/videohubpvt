@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Edit Videos{% endblock %}
+
+{% block content %}
+<div class="admin-form-page">
+  <h1 class="page-heading">Edit Videos</h1>
+  <p class="admin-hint">Change title, description, or rank for any video.</p>
+
+  {% if not videos %}
+  <div class="empty-state glass">
+    <p>No videos yet. Upload a video first.</p>
+  </div>
+  {% else %}
+  <div class="admin-videos-list glass">
+    <table class="users-table videos-table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Rank</th>
+          <th>Description</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in videos %}
+        <tr>
+          <td class="video-title-cell">{{ v.title }}</td>
+          <td><span class="rank-badge rank-{{ v.rank }}">{{ v.rank }}</span></td>
+          <td class="video-desc-cell">{{ (v.description or '')[:50] }}{% if (v.description or '')|length > 50 %}…{% endif %}</td>
+          <td class="video-actions">
+            <a href="{{ url_for('admin_edit_video', video_id=v.id) }}" class="btn btn-primary btn-sm">Edit</a>
+            <form method="post" action="{{ url_for('admin_delete_video', video_id=v.id) }}" class="delete-form inline" onsubmit="return confirm('Delete this video? The file will be removed.');">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary" style="margin-top: 16px;">← Back to Admin</a>
+</div>
+{% endblock %}

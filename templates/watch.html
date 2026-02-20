@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ video.title }}{% endblock %}
+
+{% block content %}
+<div class="watch-page">
+  <div class="watch-player-wrap glass">
+    {% if can_watch %}
+    <video
+      class="watch-player"
+      controls
+      preload="metadata"
+      {% if video.thumbnail %}poster="{{ url_for('thumb', rank=video.rank, filename=video.thumbnail) }}"{% endif %}
+      src="{{ url_for('stream_video', rank=video.rank, filename=video.filename) }}"
+    >
+      Your browser does not support the video tag.
+    </video>
+    {% else %}
+    <div class="rank-not-eligible">
+      <div class="rank-not-eligible-icon">🔒</div>
+      <h2>Rank not eligible</h2>
+      <p>This video is for <strong>{{ video.rank }}</strong> tier. Your current rank does not have access. Upgrade your rank to watch.</p>
+      <a href="{{ url_for('home') }}" class="btn btn-primary">← Back to videos</a>
+    </div>
+    {% endif %}
+  </div>
+  <div class="watch-info">
+    <span class="watch-rank rank-{{ video.rank }}">{{ video.rank }}</span>
+    <h1 class="watch-title">{{ video.title }}</h1>
+    {% if video.description %}
+    <div class="watch-description">{{ video.description }}</div>
+    {% endif %}
+  </div>
+  <a href="{{ url_for('home') }}" class="btn btn-secondary back-link">← Back to videos</a>
+</div>
+{% endblock %}

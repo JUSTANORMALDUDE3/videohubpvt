@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="layout-with-sidebar">
+  <aside class="sidebar">
+    <h2 class="sidebar-title">Categories</h2>
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('home') }}" class="sidebar-link {{ 'active' if not request.args.get('rank') else '' }}">
+        <span class="rank-dot rank-all"></span> All
+      </a>
+      <a href="{{ url_for('home', rank='top') }}" class="sidebar-link {{ 'active' if request.args.get('rank') == 'top' else '' }}">
+        <span class="rank-dot rank-top"></span> Top
+      </a>
+      <a href="{{ url_for('home', rank='middle') }}" class="sidebar-link {{ 'active' if request.args.get('rank') == 'middle' else '' }}">
+        <span class="rank-dot rank-middle"></span> Middle
+      </a>
+      <a href="{{ url_for('home', rank='free') }}" class="sidebar-link {{ 'active' if request.args.get('rank') == 'free' else '' }}">
+        <span class="rank-dot rank-free"></span> Free
+      </a>
+    </nav>
+  </aside>
+
+  <section class="content-area">
+    <h1 class="page-heading">Videos</h1>
+    {% if request.args.get('q') %}
+    <p class="search-info">Results for "{{ request.args.get('q') }}"</p>
+    {% endif %}
+
+    {% if not videos %}
+    <div class="empty-state glass">
+      <p>No videos available for your rank yet.</p>
+      <p class="empty-hint">Your rank: <strong>{{ current_rank }}</strong></p>
+    </div>
+    {% else %}
+    <div class="video-grid" id="video-grid">
+      {% for v in videos %}
+      {% set thumb_url = url_for('thumb', rank=v.rank, filename=v.thumbnail) if v.thumbnail else '' %}
+      <a href="{{ url_for('watch', video_id=v.id) }}" class="video-card glass" data-video-id="{{ v.id }}">
+        <div class="video-card-thumb-wrap">
+          {% if v.thumbnail %}
+          <img src="{{ thumb_url }}" alt="{{ v.title }}" class="video-card-thumb" loading="lazy">
+          {% else %}
+          <div class="video-card-thumb placeholder">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+          {% endif %}
+          <span class="video-card-rank rank-{{ v.rank }}">{{ v.rank }}</span>
+        </div>
+        <div class="video-card-info">
+          <h3 class="video-card-title">{{ v.title }}</h3>
+          <p class="video-card-meta">{{ v.rank }} tier</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

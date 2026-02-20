@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Stream{% endblock %} | VideoHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="page-{{ request.endpoint or 'default' }}">
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div data-flash="{{ message }}" data-flash-type="{{ category }}" style="display:none;"></div>
+    {% endfor %}
+  {% endwith %}
+
+  {% if session.username %}
+  <header class="main-header">
+    <a href="{{ url_for('home') }}" class="logo">VideoHub</a>
+    <form class="search-form" action="{{ url_for('home') }}" method="get" role="search">
+      {% if request.args.get('rank') %}<input type="hidden" name="rank" value="{{ request.args.get('rank') }}">{% endif %}
+      <input type="search" name="q" class="search-input" placeholder="Search videos..." value="{{ request.args.get('q', '') }}" autocomplete="off">
+      <button type="submit" class="search-btn" aria-label="Search">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
+    </form>
+    <nav class="header-nav">
+      <span class="user-badge">{{ session.username }} <em>({{ session.rank }})</em></span>
+      {% if session.username == 'admin' %}
+      <a href="{{ url_for('admin_upload') }}" class="nav-link">Direct Upload</a>
+      <a href="{{ url_for('admin_users') }}" class="nav-link">Manage Profiles</a>
+      <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Admin</a>
+      {% endif %}
+      <a href="{{ url_for('logout') }}" class="nav-link">Log out</a>
+    </nav>
+  </header>
+  {% endif %}
+
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
