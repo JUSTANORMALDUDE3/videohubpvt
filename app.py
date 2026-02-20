@@ -31,7 +31,6 @@ from werkzeug.utils import secure_filename
 # --- Config ---
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-in-production")
-app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500 MB max upload
 VIDEOS_DIR = Path(__file__).resolve().parent / "videos"
 USERS_FILE = Path(__file__).resolve().parent / "users.xlsx"
 VIDEOS_META_FILE = Path(__file__).resolve().parent / "videos.xlsx"
