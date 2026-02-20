@@ -16,12 +16,14 @@
       </div>
     </div>
 
-    <form method="post" action="{{ url_for('admin_upload') }}" enctype="multipart/form-data" class="upload-form" id="upload-form">
+    <form method="post" action="{{ url_for('admin_upload') }}" enctype="multipart/form-data" class="upload-form"
+      id="upload-form">
       <label class="input-label" for="title">Title</label>
       <input type="text" id="title" name="title" class="input-field" placeholder="Video title" required>
 
       <label class="input-label" for="description">Description</label>
-      <textarea id="description" name="description" class="input-field textarea" rows="4" placeholder="Optional description"></textarea>
+      <textarea id="description" name="description" class="input-field textarea" rows="4"
+        placeholder="Optional description"></textarea>
 
       <label class="input-label" for="rank">Rank</label>
       <select id="rank" name="rank" class="input-field">
@@ -44,108 +46,165 @@
 
 {% block scripts %}
 <script>
-(function() {
-  const form = document.getElementById('upload-form');
-  const progressWrap = document.getElementById('upload-progress');
-  const progressBar = document.getElementById('progress-bar');
-  const progressPercent = document.getElementById('progress-percent');
-  const progressStatus = document.getElementById('progress-status');
-  const uploadBtn = document.getElementById('upload-btn');
+  (function () {
+    const form = document.getElementById('upload-form');
+    const progressWrap = document.getElementById('upload-progress');
+    const progressBar = document.getElementById('progress-bar');
+    const progressPercent = document.getElementById('progress-percent');
+    const progressStatus = document.getElementById('progress-status');
+    const uploadBtn = document.getElementById('upload-btn');
+    // Maximum chunk size (20 MB)
+    const CHUNK_SIZE = 20 * 1024 * 1024;
 
-  form.addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(form);
-    const xhr = new XMLHttpRequest();
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
 
-    // Show progress
-    progressWrap.style.display = 'block';
-    uploadBtn.disabled = true;
-    uploadBtn.textContent = 'Uploading...';
-
-    // Track upload progress
-    xhr.upload.addEventListener('progress', function(e) {
-      if (e.lengthComputable) {
-        const percent = Math.round((e.loaded / e.total) * 100);
-        progressBar.style.width = percent + '%';
-        progressPercent.textContent = percent + '%';
-        progressStatus.textContent = 'Uploading... ' + formatBytes(e.loaded) + ' / ' + formatBytes(e.total);
+      const fileInput = document.getElementById('video');
+      const file = fileInput.files[0];
+      if (!file) {
+        showError("Please select a video file");
+        return;
       }
+
+      // Prepare metadata
+      const title = document.getElementById('title').value;
+      const description = document.getElementById('description').value;
+      const rank = document.getElementById('rank').value;
+      const uploadId = uuidv4(); // Unique ID for this specific upload session
+
+      // UI Updates
+      progressWrap.style.display = 'block';
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = 'Preparing...';
+
+      // Start recursive upload
+      uploadChunk(file, 0, uploadId, title, description, rank);
     });
 
-    // Handle completion
-    xhr.addEventListener('load', function() {
-      if (xhr.status === 200) {
-        try {
-          const response = JSON.parse(xhr.responseText);
-          if (response.success) {
-            progressBar.style.width = '100%';
-            progressPercent.textContent = '100%';
-            progressStatus.textContent = 'Upload complete! Redirecting...';
-            setTimeout(function() {
-              window.location.href = "{{ url_for('admin_dashboard') }}";
-            }, 1000);
+    function uploadChunk(file, start, uploadId, title, description, rank) {
+      const end = Math.min(start + CHUNK_SIZE, file.size);
+      const chunk = file.slice(start, end);
+      const isLastChunk = end >= file.size;
+
+      const formData = new FormData();
+      formData.append('video_chunk', chunk, file.name);
+      formData.append('upload_id', uploadId);
+      formData.append('chunk_start', start);
+      formData.append('chunk_end', end);
+      formData.append('total_size', file.size);
+      formData.append('is_last_chunk', isLastChunk);
+
+      // On the last chunk, we also send the metadata so the backend finishes the job
+      if (isLastChunk) {
+        formData.append('title', title);
+        formData.append('description', description);
+        formData.append('rank', rank);
+      }
+
+      uploadBtn.textContent = isLastChunk ? 'Finalizing...' : 'Uploading chunk...';
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', form.action);
+
+      // We do NOT add upload progress tracking on the chunk request itself here, 
+      // but instead update the progress based on completed chunks.
+      xhr.upload.addEventListener('progress', function (e) {
+        if (e.lengthComputable) {
+          const currentUploaded = start + e.loaded;
+          const percent = Math.min(Math.round((currentUploaded / file.size) * 100), 100);
+          // Avoid dropping to 0% mid-chunk or jumping over 100 before final piece
+          progressBar.style.width = percent + '%';
+          progressPercent.textContent = percent + '%';
+          progressStatus.textContent = 'Uploading... ' + formatBytes(currentUploaded) + ' / ' + formatBytes(file.size);
+        }
+      });
+
+      xhr.addEventListener('load', function () {
+        if (xhr.status === 200) {
+          let response;
+          try {
+            response = JSON.parse(xhr.responseText);
+          } catch (e) {
+            // Fallback for non-JSON responses
+            if (isLastChunk) {
+              finishUploadSuccess();
+              return;
+            }
+          }
+
+          if (response && response.success) {
+            if (isLastChunk) {
+              finishUploadSuccess();
+            } else {
+              // Upload next chunk
+              uploadChunk(file, end, uploadId, title, description, rank);
+            }
           } else {
-            showError(response.error || 'Upload failed');
+            showError(response ? response.error : 'Upload failed');
             resetForm();
           }
-        } catch (e) {
-          // If response is HTML (redirect), reload page
-          window.location.reload();
+        } else {
+          let errorMsg = 'Upload failed.';
+          try {
+            const r = JSON.parse(xhr.responseText);
+            if (r.error) errorMsg = r.error;
+          } catch (e) { }
+          showError(errorMsg);
+          resetForm();
         }
-      } else {
-        try {
-          const response = JSON.parse(xhr.responseText);
-          showError(response.error || 'Upload failed');
-        } catch (e) {
-          showError('Upload failed. Please try again.');
-        }
+      });
+
+      xhr.addEventListener('error', function () {
+        showError('Network error. Please check your connection.');
         resetForm();
-      }
-    });
+      });
 
-    // Handle errors
-    xhr.addEventListener('error', function() {
-      showError('Network error. Please check your connection.');
-      resetForm();
-    });
-
-    xhr.addEventListener('abort', function() {
-      showError('Upload cancelled.');
-      resetForm();
-    });
-
-    // Send request
-    xhr.open('POST', form.action);
-    xhr.send(formData);
-  });
-
-  function resetForm() {
-    uploadBtn.disabled = false;
-    uploadBtn.textContent = 'Upload';
-    setTimeout(function() {
-      progressWrap.style.display = 'none';
-      progressBar.style.width = '0%';
-      progressPercent.textContent = '0%';
-      progressStatus.textContent = 'Uploading...';
-    }, 3000);
-  }
-
-  function showError(msg) {
-    if (window.VideoHub && window.VideoHub.toast) {
-      window.VideoHub.toast(msg, 'error');
-    } else {
-      alert(msg);
+      xhr.send(formData);
     }
-  }
 
-  function formatBytes(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  }
-})();
+    function finishUploadSuccess() {
+      progressBar.style.width = '100%';
+      progressPercent.textContent = '100%';
+      progressStatus.textContent = 'Upload complete! Redirecting...';
+      setTimeout(function () {
+        window.location.href = "{{ url_for('admin_dashboard') }}";
+      }, 1000);
+    }
+
+    // Simple UUID generator for tracking chunks on backend
+    function uuidv4() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+
+    function resetForm() {
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = 'Upload';
+      setTimeout(function () {
+        progressWrap.style.display = 'none';
+        progressBar.style.width = '0%';
+        progressPercent.textContent = '0%';
+        progressStatus.textContent = 'Uploading...';
+      }, 3000);
+    }
+
+    function showError(msg) {
+      if (window.VideoHub && window.VideoHub.toast) {
+        window.VideoHub.toast(msg, 'error');
+      } else {
+        alert(msg);
+      }
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+  })();
 </script>
 {% endblock %}

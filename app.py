@@ -308,29 +308,46 @@ def admin_dashboard():
 def admin_upload():
     if request.method == "POST":
         try:
-            title = (request.form.get("title") or "").strip() or "Untitled"
-            description = (request.form.get("description") or "").strip()
-            rank = (request.form.get("rank") or "free").strip().lower()
-            if rank not in RANKS:
-                rank = "free"
-
-            video_file = request.files.get("video")
-
-            if not video_file or not video_file.filename:
+            # Handle chunked uploading
+            upload_id = request.form.get("upload_id")
+            chunk_start = request.form.get("chunk_start", type=int)
+            is_last_chunk = request.form.get("is_last_chunk") == "true"
+            
+            video_chunk = request.files.get("video_chunk")
+            
+            if not video_chunk or upload_id is None or chunk_start is None:
                 if request.is_json or request.content_type and "application/json" in request.content_type:
-                    return jsonify({"error": "Video file is required."}), 400
-                flash("Video file is required.", "error")
+                    return jsonify({"error": "Invalid chunk data."}), 400
+                flash("Invalid chunk data.", "error")
                 return redirect(url_for("admin_upload"))
 
-            ext = (video_file.filename or "").rsplit(".", 1)[-1].lower()
+            ext = (video_chunk.filename or "").rsplit(".", 1)[-1].lower()
             if ext not in ALLOWED_VIDEO_EXT:
                 if request.is_json or request.content_type and "application/json" in request.content_type:
                     return jsonify({"error": f"Allowed video formats: {', '.join(ALLOWED_VIDEO_EXT)}"}), 400
                 flash(f"Allowed video formats: {', '.join(ALLOWED_VIDEO_EXT)}", "error")
                 return redirect(url_for("admin_upload"))
 
-            # Save video to /videos/<rank>/
-            safe_name = secure_filename(video_file.filename)
+            # Save temporary chunk
+            tmp_path = VIDEOS_DIR / f"{upload_id}.tmp"
+            
+            # Append chunk to temporary file
+            with open(tmp_path, "ab") as f:
+                f.seek(chunk_start)
+                video_chunk.save(f)
+
+            if not is_last_chunk:
+                return jsonify({"success": True, "message": "Chunk uploaded."})
+
+            # --- Final Chunk Handling ---
+            title = (request.form.get("title") or "").strip() or "Untitled"
+            description = (request.form.get("description") or "").strip()
+            rank = (request.form.get("rank") or "free").strip().lower()
+            if rank not in RANKS:
+                rank = "free"
+
+            # Move .tmp file to real video folder
+            safe_name = secure_filename(video_chunk.filename)
             if not safe_name:
                 safe_name = f"{uuid.uuid4().hex}.{ext}"
             elif "." not in safe_name:
@@ -339,7 +356,7 @@ def admin_upload():
             video_path = VIDEOS_DIR / rank / safe_name
             # Ensure directory exists
             video_path.parent.mkdir(parents=True, exist_ok=True)
-            video_file.save(str(video_path))
+            shutil.move(str(tmp_path), str(video_path))
 
             # Generate thumbnail from middle of video
             thumb_name = f"{uuid.uuid4().hex}.jpg"
@@ -373,6 +390,13 @@ def admin_upload():
             return redirect(url_for("admin_dashboard"))
         except Exception as e:
             error_msg = f"Upload failed: {str(e)}"
+            # Clean up tmp file if error occurs
+            tmp_id = request.form.get("upload_id")
+            if tmp_id:
+                tmp_path = VIDEOS_DIR / f"{tmp_id}.tmp"
+                if tmp_path.exists():
+                    tmp_path.unlink()
+            
             if request.is_json or request.content_type and "application/json" in request.content_type:
                 return jsonify({"error": error_msg}), 500
             flash(error_msg, "error")
