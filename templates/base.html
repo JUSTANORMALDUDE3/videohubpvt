@@ -40,7 +40,22 @@
         </svg>
       </button>
     </form>
-    <nav class="header-nav">
+
+    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </svg>
+    </button>
+
+    <div id="mobileNavOverlay" class="mobile-nav-overlay"></div>
+    <nav class="header-nav" id="headerNav">
+      <button class="mobile-menu-close" id="mobileMenuClose" aria-label="Close">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
       <span class="user-badge">{{ session.username }} <em>({{ session.rank }})</em></span>
       {% if session.username == 'admin' %}
       <a href="{{ url_for('admin_upload') }}" class="nav-link">Direct Upload</a>

@@ -1325,6 +1325,13 @@ body {
   border: 2px solid;
 }
 
+/* Mobile Menu base states (hidden on desktop) */
+.mobile-menu-btn,
+.mobile-menu-close,
+.mobile-nav-overlay {
+  display: none;
+}
+
 /* Base Responsive */
 @media (max-width: 1024px) {
   .main-content {
@@ -1353,9 +1360,99 @@ body {
     font-size: 1.25rem;
   }
 
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    cursor: pointer;
+    padding: 8px;
+    margin-left: auto;
+  }
+
+  .mobile-nav-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1040;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .mobile-nav-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   .header-nav {
-    display: none;
-    /* Hide standard nav on mobile (could be replaced by bottom nav) */
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    right: 0;
+    transform: translateX(100%);
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-card);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-left: 1px solid var(--border-light);
+    padding: 80px 20px 24px;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 1050;
+    gap: 8px;
+    box-shadow: -20px 0 50px rgba(0, 0, 0, 0.6);
+  }
+
+  .header-nav.active {
+    transform: translateX(0);
+  }
+
+  .header-nav .user-badge {
+    padding-bottom: 24px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 1.15rem;
+    font-weight: 600;
+  }
+
+  .header-nav .nav-link {
+    font-size: 1.1rem;
+    padding: 14px 16px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid transparent;
+    transition: all var(--transition);
+  }
+
+  .header-nav .nav-link:hover,
+  .header-nav .nav-link:active {
+    background: var(--accent);
+    color: #fff;
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  }
+
+  .mobile-menu-close {
+    display: flex;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 8px;
+    transition: color var(--transition);
+  }
+
+  .mobile-menu-close:hover {
+    color: var(--text);
   }
 
   .search-form {

@@ -224,9 +224,9 @@
     if (!themeBtn || !themeModal) return;
 
     var currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-    
+
     // Highlight active swatch on load
-    swatches.forEach(function(btn) {
+    swatches.forEach(function (btn) {
       if (btn.getAttribute('data-set-theme') === currentTheme) {
         btn.classList.add('active');
       }
@@ -245,11 +245,11 @@
     function setTheme(themeName) {
       // Temporarily add transition class to body
       document.body.classList.add('theme-transition');
-      
+
       document.documentElement.setAttribute('data-theme', themeName);
       localStorage.setItem('videohub_theme', themeName);
 
-      swatches.forEach(function(btn) {
+      swatches.forEach(function (btn) {
         if (btn.getAttribute('data-set-theme') === themeName) {
           btn.classList.add('active');
         } else {
@@ -258,10 +258,10 @@
       });
 
       // Remove transition class after animation completes (matches CSS 0.4s)
-      setTimeout(function() {
+      setTimeout(function () {
         document.body.classList.remove('theme-transition');
       }, 400);
-      
+
       closeModal();
     }
 
@@ -269,17 +269,43 @@
     closeBtn.addEventListener('click', closeModal);
     themeOverlay.addEventListener('click', closeModal);
 
-    swatches.forEach(function(btn) {
-      btn.addEventListener('click', function() {
+    swatches.forEach(function (btn) {
+      btn.addEventListener('click', function () {
         setTheme(this.getAttribute('data-set-theme'));
       });
     });
+  }
+
+  function initMobileMenu() {
+    var menuBtn = document.getElementById('mobileMenuBtn');
+    var closeBtn = document.getElementById('mobileMenuClose');
+    var overlay = document.getElementById('mobileNavOverlay');
+    var nav = document.getElementById('headerNav');
+
+    if (!menuBtn || !nav) return;
+
+    function openMenu() {
+      nav.classList.add('active');
+      if (overlay) overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeMenu() {
+      nav.classList.remove('active');
+      if (overlay) overlay.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    menuBtn.addEventListener('click', openMenu);
+    if (closeBtn) closeBtn.addEventListener('click', closeMenu);
+    if (overlay) overlay.addEventListener('click', closeMenu);
   }
 
   // Optional: page transition fade
   document.addEventListener('DOMContentLoaded', function () {
     readFlash();
     initThemeSwitcher();
+    initMobileMenu();
     document.body.classList.add('loaded');
     if (document.body.classList.contains('page-watch')) {
       initWatchPlayer();
